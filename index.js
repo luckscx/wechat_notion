@@ -20,7 +20,7 @@ app.get("/", async (req, res) => {
 // 添加
 app.post("/api/add", async (req, res) => {
   const { text } = req.body;
-  logger.info(text)
+  console.log(text);
   res.send({
     code: 0,
     data: text,
