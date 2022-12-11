@@ -25,11 +25,15 @@ const replyText = (res, FromUserName, ToUserName, CreateTime, text) => {
 };
 
 app.post("/api/json", async (req, res) => {
-  const { ToUserName, FromUserName, MsgType, Content, CreateTime } = req.body
-  if (MsgType === 'text') {
+  console.log("InBody", req.body);
+  const { ToUserName, FromUserName, MsgType, Content, CreateTime, Recognition } = req.body
+  if (MsgType === 'text' || MsgType === 'voice') {
     if (FromUserName != "onrgDwNm0HiyRX8mEoC0AJHy2w6w") {
       replyText(res, FromUserName, ToUserName, CreateTime, "可惜不是来自Grissom主人的指令呢");
       return
+    }
+    if (MsgType === 'voice') {
+      Content = Recognition
     }
     const ret_text = await notion.parseText(Content)
     replyText(res, FromUserName, ToUserName, CreateTime, ret_text);
