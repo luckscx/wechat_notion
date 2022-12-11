@@ -13,6 +13,7 @@
     "async-await-retry": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^4.16.4",
+    "express-xml-bodyparser": "^0.3.0",
     "morgan": "^1.10.0",
     "mysql2": "^2.3.2",
     "sequelize": "^6.8.0",

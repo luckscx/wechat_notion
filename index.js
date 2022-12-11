@@ -3,13 +3,16 @@ const cors = require("cors");
 const morgan = require("morgan");
 const notion = require("./notion.js");
 const convert = require('xml-js');
+const xmlparser = require('express-xml-bodyparser');
+
+
 
 const logger = morgan("tiny");
 
 const app = express();
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 app.use(cors());
+app.use(express.urlencoded({extended : true}));
+app.use(xmlparser({normalizeTags : false, explicitArray : false}));
 app.use(logger);
 
 const replyText = (res, FromUserName, ToUserName, text) => {
@@ -23,12 +26,13 @@ const replyText = (res, FromUserName, ToUserName, text) => {
   }
   var options = {compact: true, ignoreComment: true, spaces: 0};
   const xmlObj = convert.json2xml(jsonObj, options)
+  res.type('application/xml');
   res.send(xmlObj);
 };
 
 app.post("/api/text", async (req, res) => {
   console.log("Get PostBody", req.body);
-  const { ToUserName, FromUserName, MsgType, Content} = req.body;
+  const { ToUserName, FromUserName, MsgType, Content} = req.body.root;
   if (FromUserName != "onrgDwNm0HiyRX8mEoC0AJHy2w6w") {
     replyText(res, FromUserName, ToUserName, "可惜不是来自Grissom主人的指令呢");
     return
