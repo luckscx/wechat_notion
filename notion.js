@@ -1,5 +1,6 @@
 const {Client, LogLevel} = require('@notionhq/client');
 const process = require('process');
+const retry = require('async-await-retry');
 
 const NOTION_KEY = process.env.NOTION_KEY;
 const todo_parent_id = process.env.TODO_PARENT_ID;
@@ -24,7 +25,9 @@ async function appendTodo(text) {
     ],
   };
   try {
-    await notion.blocks.children.append(new_todo_block);
+    await retry(async () => {
+      return await notion.blocks.children.append(new_todo_block);
+    }, null, {retriesMax: 3, interval: 800, exponential: true, factor: 3, jitter: 100});
     return true
   } catch (error) {
     console.log(error);
