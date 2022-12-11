@@ -15,7 +15,7 @@ app.post("/api/text", async (req, res) => {
   console.log('消息推送', req.body)
   const { ToUserName, FromUserName, MsgType, Content, CreateTime } = req.body
   if (MsgType === 'text') {
-    const ret_text = notion.parseText(Content)
+    const ret_text = await notion.parseText(Content)
     res.send({
       ToUserName: FromUserName,
       FromUserName: ToUserName,

@@ -24,8 +24,7 @@ async function appendTodo(text) {
     ],
   };
   try {
-    const response = await notion.blocks.children.append(new_todo_block);
-    console.log(response);
+    await notion.blocks.children.append(new_todo_block);
     return true
   } catch (error) {
     console.log(error);
@@ -35,9 +34,10 @@ async function appendTodo(text) {
 
 const addTodo = async (from_text) => {
     input_text = from_text.replace("todo","")
+    console.log(`Add todo [${input_text}]`);
     const res = await appendTodo(input_text);
     if (res) {
-      return `添加ToDo ${input_text} 成功`
+      return `添加ToDo项 [${input_text}] 成功`
     } else {
       return '添加ToDo失败，需检查日志'
     }
