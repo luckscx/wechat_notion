@@ -3,11 +3,16 @@ const cors = require("cors");
 const morgan = require("morgan");
 const notion = require("./notion.js");
 const bodyParser = require('body-parser')
+const auth = require("./auth.js")
+const xmlparser = require('express-xml-bodyparser');
+const xml2js = require('xml2js');
+
 
 const logger = morgan("tiny");
 
 const app = express();
 app.use(cors());
+app.use(xmlparser({normalizeTags : false, explicitArray: false, explicitRoot : false}))
 app.use(bodyParser.raw())
 app.use(bodyParser.json({}))
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -21,12 +26,18 @@ const replyText = (res, FromUserName, ToUserName, CreateTime, text) => {
     MsgType: "text",
     Content: text,
   }
-  res.send(jsonObj);
+  var builder = new xml2js.Builder({explicitRoot : false, rootName : "xml"});
+  var xml = builder.buildObject(jsonObj);
+  res.send(xml);
 };
+
+app.get("/api/json", async (req, res) => {
+  auth.wechat_auth(req,res)
+});
 
 app.post("/api/json", async (req, res) => {
   console.log("InBody", req.body);
-  const { ToUserName, FromUserName, MsgType, Content, CreateTime, Recognition } = req.body
+  let { ToUserName, FromUserName, MsgType, Content, CreateTime, Recognition } = req.body
   if (MsgType === 'text' || MsgType === 'voice') {
     if (FromUserName != "onrgDwNm0HiyRX8mEoC0AJHy2w6w") {
       replyText(res, FromUserName, ToUserName, CreateTime, "可惜不是来自Grissom主人的指令呢");

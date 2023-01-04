@@ -1,3 +1,5 @@
 
 node_modules
 test_svr.sh
+ecosystem.config.js
+sync.sh
