@@ -93,8 +93,7 @@ function makeNewBuyItemPage(target_title) {
   return new_props;
 }
 
-async function appendTask(from_text) {
-  input_text = from_text.replace("task","")
+async function appendTask(input_text) {
   const new_task_page = {
     parent: {database_id : task_db_id},
     properties: makeNewTaskPage(input_text),
@@ -110,8 +109,7 @@ async function appendTask(from_text) {
   }
 }
 
-async function appendBuyItem(from_text) {
-  input_text = from_text.replace("buy","")
+async function appendBuyItem(input_text) {
   const new_buy_page = {
     parent: {database_id : buy_db_id},
     properties: makeNewBuyItemPage(input_text),
@@ -138,6 +136,30 @@ const addTodo = async (from_text) => {
     }
 };
 
+const is_buy_cmd = (cmd) => {
+  if (cmd) {
+    if (cmd.startsWith("buy")) {
+      return cmd.replace(/^buy/i,"")
+    }
+    if (cmd.startsWith("购物")) {
+      return cmd.replace(/^购物/,"")
+    }
+  }
+  return null
+};
+
+const is_task_cmd = (cmd) => {
+  if (cmd) {
+    if (cmd.startsWith("task")) {
+      return cmd.replace(/^task/i,"")
+    }
+    if (cmd.startsWith("任务")) {
+      return cmd.replace(/^任务/,"")
+    }
+  }
+  return null
+};
+
 
 // 回包文本
 async function parseText(from_text) {
@@ -145,11 +167,14 @@ async function parseText(from_text) {
     return await addTodo(from_text)
   }
 
-  if (from_text && from_text.startsWith("task")) {
-    return await appendTask(from_text)
+  const task_ctx = is_task_cmd(from_text)
+  if (task_ctx) {
+    return await appendTask(task_ctx)
   }
-  if (from_text && from_text.startsWith("buy")) {
-    return await appendBuyItem(from_text)
+
+  const buy_ctx = is_buy_cmd(from_text)
+  if (buy_ctx) {
+    return await appendBuyItem(buy_ctx)
   }
 
   return await addTodo(from_text)
