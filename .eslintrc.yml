@@ -1,0 +1,15 @@
+env:
+  browser: false
+  commonjs: true
+  es2021: true
+extends: airbnb-base
+overrides: []
+parserOptions:
+  ecmaVersion: latest
+rules:
+  camelcase : off
+  no-console : off
+  max-len :
+    - error
+    - 120
+

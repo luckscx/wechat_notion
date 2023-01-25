@@ -1,28 +1,31 @@
-const sha1 = require('node-sha1');
+const WXCrypto = require('./msg_crypto');
+const config = require('./config');
 
-const config = {
-	token: 'dier', //对应测试号接口配置信息里填的token
-	appid: 'xxxxxxxxxxxxxx', //对应测试号信息里的appID
-	secret: 'xxxxxxx', //对应测试号信息里的appsecret
-	grant_type: 'client_credential' //默认
-};
+const wxCrypto = new WXCrypto(config.token, config.secret, config.appid);
+
+const encrypt = (text) => wxCrypto.encrypt(text);
+
+const decrypt = (text) => wxCrypto.decrypt(text);
+
+const getSignature = (timestamp, nonce, decryptData) => wxCrypto.getSignature(timestamp, nonce, decryptData);
 
 const wechat_auth = (req, res) => {
-  const token = config.token; //获取配置的token
-  const signature = req.query.signature; //获取微信发送请求参数signature
-  const nonce = req.query.nonce; //获取微信发送请求参数nonce
-  const timestamp = req.query.timestamp; //获取微信发送请求参数timestamp
+  const { token } = config; // 获取配置的token
+  const { signature } = req.query; // 获取微信发送请求参数signature
+  const { nonce } = req.query; // 获取微信发送请求参数nonce
+  const { timestamp } = req.query; // 获取微信发送请求参数timestamp
 
-  const str = [token, timestamp, nonce].sort().join(""); //排序token、timestamp、nonce后转换为组合字符串
-  const sha = sha1(str); //加密组合字符串
+  const sha = getSignature(timestamp, nonce, token);
 
-  //如果加密组合结果等于微信的请求参数signature，验证通过
+  // 如果加密组合结果等于微信的请求参数signature，验证通过
   if (sha === signature) {
-    const echostr = req.query.echostr; //获取微信请求参数echostr
-    res.send(echostr + ""); //正常返回请求参数echostr
+    const { echostr } = req.query; // 获取微信请求参数echostr
+    res.send(`${echostr}`); // 正常返回请求参数echostr
   } else {
-    res.send("验证失败");
+    res.send('验证失败');
   }
 };
 
-module.exports = {wechat_auth};
+module.exports = {
+  wechat_auth, encrypt, decrypt, getSignature,
+};

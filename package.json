@@ -1,24 +1,31 @@
 {
-  "name": "wxcloudrun-express",
+  "name": "wechat_notion",
   "version": "1.0.0",
-  "description": "微信云托管 express 框架模版",
+  "description": "微信公众号操作notion表单应用",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "",
+  "author": "Grissom Shen",
   "license": "Apache-2.0",
   "dependencies": {
     "@notionhq/client": "^2.2.2",
     "async-await-retry": "^2.0.0",
+    "body-parser": "^1.20.1",
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "express-xml-bodyparser": "^0.3.0",
     "moment": "^2.29.4",
     "morgan": "^1.10.0",
-    "node-sha1": "^1.0.1"
+    "node-sha1": "^1.0.1",
+    "xml2js": "^0.4.23"
   },
   "engines": {
     "node": ">=12.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.2"
   }
 }
