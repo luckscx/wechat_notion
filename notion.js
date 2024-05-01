@@ -95,13 +95,12 @@ function makeNewBuyItemPage(target_title) {
 }
 
 function makeNewIdeaItemPage(target_title) {
-  const new_props = {
+  return {
     Name: {
       type: 'title',
-      title: [{ type: 'text', text: { content: target_title } }],
+      title: [{type: 'text', text: {content: target_title}}],
     },
   };
-  return new_props;
 }
 
 async function appendTask(input_text) {
@@ -157,64 +156,23 @@ const addTodo = async (from_text) => {
   return '添加ToDo失败，需检查日志';
 };
 
-const is_idea_cmd = (cmd) => {
-  if (cmd) {
-    if (cmd.startsWith('我想')) {
-      return cmd.replace(/^我想/i, '');
-    }
-
-    if (cmd.startsWith('idea')) {
-      return cmd.replace(/^idea/, '');
-    }
-  }
-
-  return null;
-};
-
-const is_buy_cmd = (cmd) => {
-  if (cmd) {
-    if (cmd.startsWith('buy')) {
-      return cmd.replace(/^buy/i, '');
-    }
-
-    if (cmd.startsWith('购物')) {
-      return cmd.replace(/^购物/, '');
-    }
-  }
-
-  return null;
-};
-
-const is_task_cmd = (cmd) => {
-  if (cmd) {
-    if (cmd.startsWith('task')) {
-      return cmd.replace(/^task/i, '');
-    }
-
-    if (cmd.startsWith('任务')) {
-      return cmd.replace(/^任务/, '');
-    }
-  }
-
-  return null;
-};
-
 const check_func_factory = (pre_key_ar) => {
-  const check_cmd_func = (cmd) => {
+  return (cmd) => {
     for (let i = 0; i < pre_key_ar.length; i += 1) {
       const pre_key = pre_key_ar[i];
       if (cmd.startsWith(pre_key)) {
+        console.log("hit rule")
         const regex = new RegExp(`^${pre_key}`, 'i');
         return cmd.replace(regex, '');
       }
     }
     return null;
   };
-
-  return check_cmd_func;
 };
 
 const is_task_cmd = check_func_factory(["task","任务"])
+const is_buy_cmd = check_func_factory(["buy","购物"])
+const is_idea_cmd = check_func_factory(["idea","我想"])
 
 // 回包文本
 async function parseText(from_text) {
