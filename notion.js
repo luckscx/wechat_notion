@@ -8,6 +8,7 @@ const todo_parent_id = process.env.TODO_PARENT_ID;
 const task_db_id = process.env.TASK_DB_ID;
 const buy_db_id = process.env.BUY_DB_ID;
 const idea_db_id = process.env.IDEA_DB_ID;
+const people_db_id = process.env.PEOPLE_DB_ID;
 
 const notion = new Client({ auth: NOTION_KEY, logLevel: LogLevel.WARN });
 
@@ -94,56 +95,36 @@ function makeNewBuyItemPage(target_title) {
   return new_props;
 }
 
-function makeNewIdeaItemPage(target_title) {
-  return {
-    Name: {
-      type: 'title',
-      title: [{type: 'text', text: {content: target_title}}],
-    },
-  };
-}
-
-async function appendTask(input_text) {
-  const new_task_page = {
-    parent: { database_id: task_db_id },
-    properties: makeNewTaskPage(input_text),
-  };
-  try {
-    await myRetry(async () => notion.pages.create(new_task_page));
-    return `添加任务项 [${input_text}] 成功`;
-  } catch (error) {
-    console.log(error);
-    return `添加任务项 [${input_text}] 失败，请检查日志`;
+const add_page_func_factory = function (name, db_id, property_maker) {
+  return async function (input_text) {
+    let prop = {
+      Name: {
+        type: 'title',
+        title: [{type: 'text', text: {content: input_text}}],
+      },
+    }
+    if (property_maker) {
+      prop = property_maker(input_text)
+    }
+    const new_page = {
+      parent: {database_id: db_id},
+      properties: prop
+    };
+    console.log(new_page)
+    try {
+      await myRetry(async () => notion.pages.create(new_page));
+      return `添加${name} [${input_text}] 成功`;
+    } catch (error) {
+      console.log(error);
+      return `添加${name} [${input_text}] 失败，请检查日志`;
+    }
   }
 }
 
-async function appendBuyItem(input_text) {
-  const new_buy_page = {
-    parent: { database_id: buy_db_id },
-    properties: makeNewBuyItemPage(input_text),
-  };
-  try {
-    await myRetry(async () => notion.pages.create(new_buy_page));
-    return `添加购物项 [${input_text}] 成功`;
-  } catch (error) {
-    console.log(error);
-    return `添加购物项 [${input_text}] 失败，请检查日志`;
-  }
-}
-
-async function appendIdeaItem(input_text) {
-  const new_page = {
-    parent: { database_id: idea_db_id },
-    properties: makeNewIdeaItemPage(input_text),
-  };
-  try {
-    await myRetry(async () => notion.pages.create(new_page));
-    return `添加奇思妙想 [${input_text}] 成功`;
-  } catch (error) {
-    console.log(error);
-    return `添加奇思妙想 [${input_text}] 失败，请检查日志`;
-  }
-}
+const appendPeopleItem = add_page_func_factory("关系人", people_db_id)
+const appendIdeaItem = add_page_func_factory("奇思妙想", idea_db_id)
+const appendTask = add_page_func_factory("任务项", task_db_id, makeNewTaskPage)
+const appendBuyItem = add_page_func_factory("购物项", buy_db_id, makeNewBuyItemPage)
 
 const addTodo = async (from_text) => {
   const input_text = from_text.replace('todo', '');
@@ -173,28 +154,31 @@ const check_func_factory = (pre_key_ar) => {
 const is_task_cmd = check_func_factory(["task","任务"])
 const is_buy_cmd = check_func_factory(["buy","购物"])
 const is_idea_cmd = check_func_factory(["idea","我想"])
+const is_people_cmd = check_func_factory(["people","关系人"])
+
+const check_arr = [{
+  check : is_task_cmd,
+  add : appendTask
+}, {
+  check : is_buy_cmd,
+  add : appendBuyItem,
+}, {
+  check : is_idea_cmd,
+  add : appendIdeaItem,
+}, {
+  check : is_people_cmd,
+  add : appendPeopleItem,
+}]
 
 // 回包文本
 async function parseText(from_text) {
-  if (from_text && from_text.startsWith('todo')) {
-    return addTodo(from_text);
+  for (let i = 0; i < check_arr.length; i++) {
+    const check_obj = check_arr[i]
+    const res = check_obj.check(from_text)
+    if (res) {
+      return check_obj.add(res)
+    }
   }
-
-  const task_ctx = is_task_cmd(from_text);
-  if (task_ctx) {
-    return appendTask(task_ctx);
-  }
-
-  const buy_ctx = is_buy_cmd(from_text);
-  if (buy_ctx) {
-    return appendBuyItem(buy_ctx);
-  }
-
-  const idea_ctx = is_idea_cmd(from_text);
-  if (idea_ctx) {
-    return appendIdeaItem(idea_ctx);
-  }
-
   return addTodo(from_text);
 }
 
