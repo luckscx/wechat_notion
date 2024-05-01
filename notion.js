@@ -110,7 +110,7 @@ async function appendTask(input_text) {
     properties: makeNewTaskPage(input_text),
   };
   try {
-    await myRetry(async () => await notion.pages.create(new_task_page));
+    await myRetry(async () => notion.pages.create(new_task_page));
     return `添加任务项 [${input_text}] 成功`;
   } catch (error) {
     console.log(error);
@@ -124,7 +124,7 @@ async function appendBuyItem(input_text) {
     properties: makeNewBuyItemPage(input_text),
   };
   try {
-    await myRetry(async () => await notion.pages.create(new_buy_page));
+    await myRetry(async () => notion.pages.create(new_buy_page));
     return `添加购物项 [${input_text}] 成功`;
   } catch (error) {
     console.log(error);
@@ -138,7 +138,7 @@ async function appendIdeaItem(input_text) {
     properties: makeNewIdeaItemPage(input_text),
   };
   try {
-    await myRetry(async () => await notion.pages.create(new_page));
+    await myRetry(async () => notion.pages.create(new_page));
     return `添加奇思妙想 [${input_text}] 成功`;
   } catch (error) {
     console.log(error);
@@ -147,7 +147,7 @@ async function appendIdeaItem(input_text) {
 }
 
 const addTodo = async (from_text) => {
-  input_text = from_text.replace('todo', '');
+  const input_text = from_text.replace('todo', '');
   console.log(`Add todo [${input_text}]`);
   const res = await appendTodo(input_text);
   if (res) {
@@ -198,6 +198,23 @@ const is_task_cmd = (cmd) => {
 
   return null;
 };
+
+const check_func_factory = (pre_key_ar) => {
+  const check_cmd_func = (cmd) => {
+    for (let i = 0; i < pre_key_ar.length; i += 1) {
+      const pre_key = pre_key_ar[i];
+      if (cmd.startsWith(pre_key)) {
+        const regex = new RegExp(`^${pre_key}`, 'i');
+        return cmd.replace(regex, '');
+      }
+    }
+    return null;
+  };
+
+  return check_cmd_func;
+};
+
+const is_task_cmd = check_func_factory(["task","任务"])
 
 // 回包文本
 async function parseText(from_text) {
