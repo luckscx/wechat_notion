@@ -46,7 +46,7 @@ async function appendTodo(text) {
 }
 
 function makeNewTaskPage(target_title) {
-  const target_day = moment().format('YYYY-MM-DD');
+  const target_day = moment.utc().format('YYYY-MM-DD');
   const new_props = {
     Name: {
       type: 'title',
@@ -88,33 +88,6 @@ function makeNewBuyItemPage(target_title) {
     },
     需求度: {
       type: 'select',
-      select: {
-        name: '中',
-      },
-    },
-  };
-}
-
-// https://www.notion.so/grissom89/3e211edeaf9448a8ad752283fa73ec16?v=493e71324311488cb3d5780e805c1c26&pvs=4
-
-function makeSessionPage(in_text) {
-  return {
-    Name: {
-      type: 'title',
-      title: [{type: 'text', text: {content: target_title}}],
-    },
-    时间: {
-      type: 'date',
-      date: {},
-    },
-    耗时: {
-      type: 'number',
-      select: {
-        name: '待采购',
-      },
-    },
-    结果: {
-      type: 'number',
       select: {
         name: '中',
       },
@@ -205,7 +178,7 @@ const check_arr = [{
   property_maker : (in_text, base_props) => {
     delete base_props["实际盈利"]
     delete base_props["每小时盈利"]
-    base_props["日期"]["date"].start = moment().format('YYYY-MM-DD')
+    base_props["日期"]["date"].start = moment.utc().format('YYYY-MM-DD HH:mm:ss')
     base_props["结果"]["number"] = parseInt(in_text)
     return base_props
   }
@@ -230,7 +203,6 @@ async function parseText(from_text) {
       if (check_obj.property_maker) {
         base_props = check_obj.property_maker(input_text, base_props)
       }
-      console.log(base_props)
       return await add_page_func_factory(check_obj.name, input_text, check_obj.db_id, base_props)
     }
   }
