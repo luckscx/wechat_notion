@@ -2,7 +2,7 @@
 const notion = require("./notion.js")
 
 async function test(){
-    res = await notion.parseText("关系人xxx")
+    res = await notion.parseText("poker -100")
     console.log(res)
 }
 

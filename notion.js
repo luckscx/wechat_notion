@@ -9,6 +9,7 @@ const task_db_id = process.env.TASK_DB_ID;
 const buy_db_id = process.env.BUY_DB_ID;
 const idea_db_id = process.env.IDEA_DB_ID;
 const people_db_id = process.env.PEOPLE_DB_ID;
+const poker_db_id = process.env.POKER_DB_ID;
 
 const notion = new Client({ auth: NOTION_KEY, logLevel: LogLevel.WARN });
 
@@ -74,10 +75,10 @@ function makeNewTaskPage(target_title) {
 }
 
 function makeNewBuyItemPage(target_title) {
-  const new_props = {
+  return {
     Name: {
       type: 'title',
-      title: [{ type: 'text', text: { content: target_title } }],
+      title: [{type: 'text', text: {content: target_title}}],
     },
     状态: {
       type: 'select',
@@ -92,39 +93,49 @@ function makeNewBuyItemPage(target_title) {
       },
     },
   };
-  return new_props;
 }
 
-const add_page_func_factory = function (name, db_id, property_maker) {
-  return async function (input_text) {
-    let prop = {
-      Name: {
-        type: 'title',
-        title: [{type: 'text', text: {content: input_text}}],
+// https://www.notion.so/grissom89/3e211edeaf9448a8ad752283fa73ec16?v=493e71324311488cb3d5780e805c1c26&pvs=4
+
+function makeSessionPage(in_text) {
+  return {
+    Name: {
+      type: 'title',
+      title: [{type: 'text', text: {content: target_title}}],
+    },
+    时间: {
+      type: 'date',
+      date: {},
+    },
+    耗时: {
+      type: 'number',
+      select: {
+        name: '待采购',
       },
-    }
-    if (property_maker) {
-      prop = property_maker(input_text)
-    }
-    const new_page = {
-      parent: {database_id: db_id},
-      properties: prop
-    };
-    console.log(new_page)
-    try {
-      await myRetry(async () => notion.pages.create(new_page));
-      return `添加${name} [${input_text}] 成功`;
-    } catch (error) {
-      console.log(error);
-      return `添加${name} [${input_text}] 失败，请检查日志`;
-    }
+    },
+    结果: {
+      type: 'number',
+      select: {
+        name: '中',
+      },
+    },
+  };
+}
+
+const add_page_func_factory = async function (name, input_text, db_id, prop) {
+  const new_page = {
+    parent: {database_id: db_id},
+    properties: prop
+  };
+  console.log(new_page)
+  try {
+    await myRetry(async () => await notion.pages.create(new_page));
+    return `添加${name} [${input_text}] 成功`;
+  } catch (error) {
+    console.log(error);
+    return `添加${name} [${input_text}] 失败，请检查日志`;
   }
 }
-
-const appendPeopleItem = add_page_func_factory("关系人", people_db_id)
-const appendIdeaItem = add_page_func_factory("奇思妙想", idea_db_id)
-const appendTask = add_page_func_factory("任务项", task_db_id, makeNewTaskPage)
-const appendBuyItem = add_page_func_factory("购物项", buy_db_id, makeNewBuyItemPage)
 
 const addTodo = async (from_text) => {
   const input_text = from_text.replace('todo', '');
@@ -151,32 +162,76 @@ const check_func_factory = (pre_key_ar) => {
   };
 };
 
-const is_task_cmd = check_func_factory(["task","任务"])
-const is_buy_cmd = check_func_factory(["buy","购物"])
-const is_idea_cmd = check_func_factory(["idea","我想"])
-const is_people_cmd = check_func_factory(["people","关系人"])
+
+const get_template_page = async (db_id) => {
+  const response = await notion.databases.query({
+    database_id: db_id,
+    sorts: [
+      {
+        property: "日期",
+        direction: "descending"
+      }
+    ],
+    page_size : 1,
+  });
+  const last_page = response.results[0]
+  return last_page.properties
+}
+
 
 const check_arr = [{
-  check : is_task_cmd,
-  add : appendTask
+  name : "任务项",
+  pre_key_ar : ["task","任务"],
+  db_id : task_db_id,
+  property_maker : makeNewTaskPage,
 }, {
-  check : is_buy_cmd,
-  add : appendBuyItem,
+  name : "购物项",
+  pre_key_ar : ["buy","购物"],
+  db_id : buy_db_id,
+  property_maker : makeNewBuyItemPage,
 }, {
-  check : is_idea_cmd,
-  add : appendIdeaItem,
+  name : "奇思妙想",
+  pre_key_ar : ["idea","我想"],
+  db_id : idea_db_id,
 }, {
-  check : is_people_cmd,
-  add : appendPeopleItem,
+  name : "关系人",
+  pre_key_ar : ["people","关系人"],
+  db_id : people_db_id,
+}, {
+  name : "Session记录",
+  pre_key_ar : ["poker","德州"],
+  db_id : poker_db_id,
+  template_page : true, // 是否拉取上一页作为模板
+  property_maker : (in_text, base_props) => {
+    delete base_props["实际盈利"]
+    delete base_props["每小时盈利"]
+    base_props["日期"]["date"].start = moment().format('YYYY-MM-DD')
+    base_props["结果"]["number"] = parseInt(in_text)
+    return base_props
+  }
 }]
 
 // 回包文本
 async function parseText(from_text) {
   for (let i = 0; i < check_arr.length; i++) {
     const check_obj = check_arr[i]
-    const res = check_obj.check(from_text)
-    if (res) {
-      return check_obj.add(res)
+    const check_func = check_func_factory(check_obj.pre_key_ar)
+    const input_text = check_func(from_text)
+    if (input_text) {
+      let base_props = {
+        Name: {
+          type: 'title',
+          title: [{type: 'text', text: {content: input_text}}],
+        },
+      }
+      if (check_obj.template_page) {
+        base_props = await get_template_page(check_obj.db_id)
+      }
+      if (check_obj.property_maker) {
+        base_props = check_obj.property_maker(input_text, base_props)
+      }
+      console.log(base_props)
+      return await add_page_func_factory(check_obj.name, input_text, check_obj.db_id, base_props)
     }
   }
   return addTodo(from_text);
