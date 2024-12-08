@@ -15,7 +15,7 @@ const notion = new Client({ auth: NOTION_KEY, logLevel: LogLevel.WARN });
 
 async function myRetry(foo) {
   await retry(foo, null, {
-    retriesMax: 3, interval: 800, exponential: true, factor: 3, jitter: 100,
+    retriesMax: 3, interval: 1500, exponential: true, factor: 3, jitter: 100,
   });
 }
 
@@ -167,7 +167,7 @@ const check_arr = [{
   pre_key_ar: ['people', '关系人'],
   db_id: people_db_id,
 }, {
-  name: 'Session记录',
+  name: 'Session记录一小时',
   pre_key_ar: ['poker', 'pk'],
   db_id: poker_db_id,
   template_page: true, // 是否拉取上一页作为模板
@@ -176,12 +176,27 @@ const check_arr = [{
     delete base_props['每小时盈利'];
     base_props['日期'].date.start = moment.utc().format('YYYY-MM-DD HH:mm');
     base_props['结果'].number = parseInt(in_text);
+    base_props['耗时(小时)'].number = 1;
+    return base_props;
+  },
+}, {
+  name: 'Session记录半小时',
+  pre_key_ar: ['hpk'],
+  db_id: poker_db_id,
+  template_page: true, // 是否拉取上一页作为模板
+  property_maker: (in_text, base_props) => {
+    delete base_props['实际盈利'];
+    delete base_props['每小时盈利'];
+    base_props['日期'].date.start = moment.utc().format('YYYY-MM-DD HH:mm');
+    base_props['结果'].number = parseInt(in_text);
+    base_props['耗时(小时)'].number = 0.5;
     return base_props;
   },
 }];
 
 // 回包文本
 async function parseText(from_text) {
+  console.log(`parseText ${parseText}`);
   for (let i = 0; i < check_arr.length; i++) {
     const check_obj = check_arr[i];
     const check_func = check_func_factory(check_obj.pre_key_ar);
