@@ -37,7 +37,7 @@ async function appendTodo(text) {
     ],
   };
   try {
-    await myRetry(async () => await notion.blocks.children.append(new_todo_block));
+    myRetry(async () => await notion.blocks.children.append(new_todo_block));
     return true;
   } catch (error) {
     console.log(error);
@@ -95,18 +95,45 @@ function makeNewBuyItemPage(target_title) {
   };
 }
 
-const add_page_func_factory = async function (name, input_text, db_id, prop) {
+const get_template_page = async (db_id) => {
+  const response = await notion.databases.query({
+    database_id: db_id,
+    sorts: [
+      {
+        property: '日期',
+        direction: 'descending',
+      },
+    ],
+    page_size: 1,
+  });
+  const last_page = response.results[0];
+  return last_page.properties;
+};
+
+const add_page_func_factory = async (name, input_text, db_id, check_obj) => {
+  let props = {
+    Name: {
+      type: 'title',
+      title: [{ type: 'text', text: { content: input_text } }],
+    },
+  };
+  if (check_obj.template_page) {
+    props = await get_template_page(check_obj.db_id);
+  }
+  if (check_obj.property_maker) {
+    props = check_obj.property_maker(input_text, props);
+  }
   const new_page = {
     parent: { database_id: db_id },
-    properties: prop,
+    properties: props,
   };
   console.log(new_page);
   try {
     await myRetry(async () => notion.pages.create(new_page));
-    return `添加${name} [${input_text}] 成功`;
+    console.log();
   } catch (error) {
     console.log(error);
-    return `添加${name} [${input_text}] 失败，请检查日志`;
+    console.log(`添加${name} [${input_text}] 失败，请检查日志`);
   }
 };
 
@@ -131,21 +158,6 @@ const check_func_factory = (pre_key_ar) => (cmd) => {
     }
   }
   return null;
-};
-
-const get_template_page = async (db_id) => {
-  const response = await notion.databases.query({
-    database_id: db_id,
-    sorts: [
-      {
-        property: '日期',
-        direction: 'descending',
-      },
-    ],
-    page_size: 1,
-  });
-  const last_page = response.results[0];
-  return last_page.properties;
 };
 
 const check_arr = [{
@@ -202,19 +214,9 @@ async function parseText(from_text) {
     const check_func = check_func_factory(check_obj.pre_key_ar);
     const input_text = check_func(from_text);
     if (input_text) {
-      let base_props = {
-        Name: {
-          type: 'title',
-          title: [{ type: 'text', text: { content: input_text } }],
-        },
-      };
-      if (check_obj.template_page) {
-        base_props = await get_template_page(check_obj.db_id);
-      }
-      if (check_obj.property_maker) {
-        base_props = check_obj.property_maker(input_text, base_props);
-      }
-      return add_page_func_factory(check_obj.name, input_text, check_obj.db_id, base_props);
+      // 异步处理
+      add_page_func_factory(check_obj.name, input_text, check_obj.db_id, check_obj);
+      return `添加${check_obj.name} [${input_text}] 成功`;
     }
   }
   return addTodo(from_text);

@@ -4,3 +4,4 @@ test_svr.sh
 ecosystem.config.js
 sync.sh
 config.js
+package-lock.json
